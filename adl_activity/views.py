@@ -12,9 +12,15 @@ from django.contrib.auth.hashers import check_password
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 
 from .serializers import UserSerializer, SwipeModalitySerializer, PhysicalModalitySerializer, DeviceDropModalitySerializer, TypingMonitorModalitySerializer, VoiceModalitySerializer
 from .models import User, SwipeModality, PhysicalModality, DeviceDropModality, TypingMonitorModality, VoiceModality
+
+from .utils import analyze_audio, describe_results, assess_interaction_ability
+import os
+from .models import user_directory_path
+from django.conf import settings
 
 class CustomAuthentication(BaseAuthentication):
     def authenticate(self, request):
@@ -112,3 +118,45 @@ class TypingMonitorModalityViewSet(viewsets.ModelViewSet):
 class VoiceModalityViewSet(viewsets.ModelViewSet):
     queryset = VoiceModality.objects.all()
     serializer_class = VoiceModalitySerializer
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    @action(detail=False, methods=['post'])
+    def analyze_data(self, request):
+        pk = request.data.get('pk')
+        print('Pk:', pk)
+        try:
+            instance = VoiceModality.objects.get(pk=pk)
+        except VoiceModality.DoesNotExist:
+            return Response({'error': 'VoiceModality instance not found.'}, status=status.HTTP_200_OK)
+        
+        if not instance.audio:
+            return Response({'error': 'No audio file associated with this instance.'}, status=status.HTTP_200_OK)
+        
+        file_path = os.path.join(settings.MEDIA_ROOT, str(instance.audio))
+        print(f"Viewset Analyzing file at path: {file_path}")
+        
+        user_friendly_result = analyze_audio(file_path)
+        instance.json_data = {
+            'data': user_friendly_result
+        }
+        instance.save()
+
+        return Response({
+            'data': instance.json_data,
+        }, status=status.HTTP_200_OK)
+
+    # def create(self, request, *args, **kwargs):
+        
+    #     response = super().create(request, *args, **kwargs)
+    #     instance = self.get_object()
+        
+    #     if instance.audio:
+    #         file_path = instance.audio.path
+            
+    #         user_friendly_result = analyze_audio(file_path)
+    #         instance.json_data = {
+    #             'data': user_friendly_result
+    #         }
+    #         instance.save()
+        
+    #     return Response(VoiceModalitySerializer(instance).data, status=status.HTTP_201_CREATED)

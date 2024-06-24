@@ -1,6 +1,10 @@
 from django.db import models
 from django.db.models import JSONField
 from django.contrib.auth.models import AbstractUser, Group, Permission, User
+import os
+
+def user_directory_path(instance, filename):
+    return 'user_{0}\{1}'.format(instance.user.id, filename)
 
 class User(AbstractUser):
     email = models.EmailField(unique=True)
@@ -49,6 +53,7 @@ class VoiceModality(models.Model):
     user = models.ForeignKey(User, on_delete=models.CASCADE)
     timestamp = models.DateField(auto_now=True)
     json_data = JSONField(null=True, blank=True)
+    audio = models.FileField(upload_to=user_directory_path, null=True, blank=True)
     
     def __str__(self):
         return f"{self.user} - {self.json_data}"
