@@ -102,6 +102,15 @@ class UserViewset(viewsets.ModelViewSet):
 class SwipeModalityViewSet(viewsets.ModelViewSet):
     queryset = SwipeModality.objects.all()
     serializer_class = SwipeModalitySerializer
+    
+    def list(self, request, *arg, **kwargs):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({'error': 'User is missing'})
+        
+        modalities = self.queryset.filter(user_id=user_id)
+        serializer = self.get_serializer(modalities, many=True)
+        return Response(serializer.data)
 
 class PhysicalModalityViewSet(viewsets.ModelViewSet):
     queryset = PhysicalModality.objects.all()
@@ -114,11 +123,29 @@ class DeviceDropModalityViewSet(viewsets.ModelViewSet):
 class TypingMonitorModalityViewSet(viewsets.ModelViewSet):
     queryset = TypingMonitorModality.objects.all()
     serializer_class = TypingMonitorModalitySerializer
+    
+    def list(self, request, *arg, **kwargs):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({'error': 'User is missing'})
+        
+        modalities = self.queryset.filter(user_id=user_id)
+        serializer = self.get_serializer(modalities, many=True)
+        return Response(serializer.data)
 
 class VoiceModalityViewSet(viewsets.ModelViewSet):
     queryset = VoiceModality.objects.all()
     serializer_class = VoiceModalitySerializer
     parser_classes = [MultiPartParser, FormParser, JSONParser]
+    
+    def list(self, request, *arg, **kwargs):
+        user_id = request.query_params.get('user_id')
+        if not user_id:
+            return Response({'error': 'User is missing'})
+        
+        modalities = self.queryset.filter(user_id=user_id)
+        serializer = self.get_serializer(modalities, many=True)
+        return Response(serializer.data)
     
     @action(detail=False, methods=['post'])
     def analyze_data(self, request):
